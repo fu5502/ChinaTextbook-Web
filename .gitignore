@@ -1,0 +1,18 @@
+# 本地项目数据（含记忆/日志，不进仓库）
+.workbuddy/
+
+# 浏览器冒烟测试产物（截图等）
+.smoke/
+
+# wrangler 本地缓存
+.wrangler/
+
+# 依赖与系统文件
+node_modules/
+.DS_Store
+Thumbs.db
+*.log
+
+# 上游仓库目录树缓存（catalog 构建产物，非源码）
+.cache-tree.json
+.cache/

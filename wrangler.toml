@@ -1,0 +1,32 @@
+# Cloudflare Workers + Static Assets 部署配置
+# 站点为纯静态、零构建；本文件用于「Workers 托管静态资源」方式。
+# 用法：安装 wrangler（npm i -g wrangler）后执行 `wrangler deploy`
+#
+# 说明：
+# - directory = "." 指向本仓库根目录（index.html 在此）。
+# - 未设置 main，表示纯静态，没有 Worker 脚本逻辑（后续若要加 PDF 代理可补 main）。
+# - 哈希路由（#/...）下无需 SPA 回退；所有请求都落在 / 与静态资源上。
+
+name = "china-textbook"
+compatibility_date = "2025-09-15"
+
+[assets]
+directory = "."
+binding = "ASSETS"
+
+# 静态资源长缓存（浏览器/CDN 层）
+[[headers]]
+match = "/assets/*"
+name = "Cache-Control"
+value = "public, max-age=86400, must-revalidate"
+
+# 基础安全头（作用于所有响应）
+[[headers]]
+match = "/*"
+name = "X-Content-Type-Options"
+value = "nosniff"
+
+[[headers]]
+match = "/*"
+name = "Referrer-Policy"
+value = "strict-origin-when-cross-origin"

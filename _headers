@@ -1,0 +1,12 @@
+# Cloudflare Pages 自定义响应头（仅在 Pages 部署方式下生效；
+# 若改用 Workers Static Assets，请改用 wrangler.toml 的 [[headers]] 段）
+
+# 静态资源长缓存
+/assets/*
+  Cache-Control: public, max-age=86400, must-revalidate
+
+# 基础安全头
+/*
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  X-Frame-Options: SAMEORIGIN

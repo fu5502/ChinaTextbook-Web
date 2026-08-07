@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>中国教材开放资源库 · 免费公益</title>
+<meta name="description" content="免登录、免费的中小学与大学教材在线阅览。覆盖小学、初中、高中、五四学制及大学教材共 1900+ 册，支持按学段、学科、版本、年级筛选，浏览器内直接翻页阅读。">
+<meta name="theme-color" content="#12457A">
+<meta name="color-scheme" content="light">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%2312457A'/%3E%3Cpath d='M8 9.5h7.2c.9 0 1.3.5 1.3 1.2v12.6c0-.9-.5-1.3-1.3-1.3H8V9.5z' fill='%23fff' opacity='.95'/%3E%3Cpath d='M24 9.5h-7.2c-.9 0-1.3.5-1.3 1.2v12.6c0-.9.5-1.3 1.3-1.3H24V9.5z' fill='%23CFA055'/%3E%3C/svg%3E">
+
+<link rel="preload" href="data/catalog.json" as="fetch" type="application/json" crossorigin>
+<link rel="stylesheet" href="assets/css/tokens.css">
+<link rel="stylesheet" href="assets/css/base.css">
+<link rel="stylesheet" href="assets/css/components.css">
+<link rel="stylesheet" href="assets/css/layout.css">
+<link rel="stylesheet" href="assets/css/bookcard.css">
+<link rel="stylesheet" href="assets/css/reader.css">
+</head>
+<body>
+
+<div id="top-progress" aria-hidden="true"><i></i></div>
+
+<header class="site-header">
+  <div class="header-inner">
+    <a class="brand" href="#/" aria-label="返回首页">
+      <svg class="brand-mark" viewBox="0 0 32 32" aria-hidden="true">
+        <rect width="32" height="32" rx="7" fill="#12457A"/>
+        <path d="M8 9.5h7.2c.9 0 1.3.5 1.3 1.2v12.6c0-.9-.5-1.3-1.3-1.3H8V9.5z" fill="#fff" opacity=".95"/>
+        <path d="M24 9.5h-7.2c-.9 0-1.3.5-1.3 1.2v12.6c0-.9.5-1.3 1.3-1.3H24V9.5z" fill="#CFA055"/>
+      </svg>
+      <span class="brand-text">
+        <span class="brand-name">教材馆</span>
+        <span class="brand-sub">Open Textbook</span>
+      </span>
+    </a>
+
+    <div class="header-search searchbox" id="header-search">
+      <svg class="ico-search" viewBox="0 0 24 24" aria-hidden="true">
+        <circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/>
+      </svg>
+      <input class="input" type="search" id="q" placeholder="搜索书名、学科、版本，如「人教版 数学 五年级」" autocomplete="off"
+             aria-label="搜索教材" enterkeyhint="search">
+      <button class="clear" type="button" aria-label="清空">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+      </button>
+    </div>
+
+    <div class="header-actions">
+      <button class="btn btn-ghost btn-icon" id="btn-mobile-search" aria-label="搜索" hidden>
+        <svg class="ico" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+      </button>
+
+      <a class="btn btn-ghost btn-sm" href="#/favorites" id="nav-fav">
+        <svg class="ico" viewBox="0 0 24 24"><path d="M12 21s-7.5-4.7-9.3-9A5.3 5.3 0 0 1 12 6.6 5.3 5.3 0 0 1 21.3 12c-1.8 4.3-9.3 9-9.3 9z"/></svg>
+        <span class="lbl">收藏</span>
+      </a>
+
+      <div class="dropdown" id="source-dd">
+        <button class="btn btn-sm" id="source-btn" aria-haspopup="listbox" aria-expanded="false" title="选择下载/阅读线路">
+          <svg class="ico" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18z"/><path d="M3.6 9h16.8M3.6 15h16.8"/><path d="M12 3a14 14 0 0 1 0 18 14 14 0 0 1 0-18z"/></svg>
+          <span id="source-name">线路</span>
+        </button>
+        <div class="dropdown-panel" role="listbox" aria-label="线路选择" id="source-panel"></div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<main id="app" role="main"></main>
+
+<footer class="site-footer" id="site-footer">
+  <div class="footer-inner">
+    <div>
+      <h5>关于本站</h5>
+      <p>本站是一个<strong>非商业的公益教育资源索引站</strong>，为学生、家长与教师提供国家课程教材电子版的在线阅览便利。无需注册、无需登录、无任何广告与追踪。</p>
+      <p>所有教材文件均托管于开源项目 <a href="https://github.com/TapXWorld/ChinaTextbook" target="_blank" rel="noopener noreferrer">TapXWorld/ChinaTextbook</a>，本站仅提供检索与阅读界面，不存储、不分发任何文件。</p>
+    </div>
+    <div>
+      <h5>资源与致谢</h5>
+      <ul>
+        <li><a href="https://github.com/TapXWorld/ChinaTextbook" target="_blank" rel="noopener noreferrer">数据来源：ChinaTextbook 项目</a></li>
+        <li><a href="https://basic.smartedu.cn/" target="_blank" rel="noopener noreferrer">国家中小学智慧教育平台</a></li>
+        <li><a href="https://mozilla.github.io/pdf.js/" target="_blank" rel="noopener noreferrer">阅读器基于 Mozilla PDF.js</a></li>
+      </ul>
+    </div>
+    <div>
+      <h5>版权声明</h5>
+      <p>教材著作权归各出版社及原作者所有。本站遵循教育公益使用原则，仅供学习研究，请勿用于商业用途。</p>
+      <p>如权利人认为内容不当，请联系上游仓库维护者处理，本站将同步移除相应索引。</p>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <span>中国教材开放资源库 · 一个免费的公益项目</span>
+    <span id="footer-stat"></span>
+  </div>
+</footer>
+
+<div id="toast-root" aria-live="polite" aria-atomic="true"></div>
+
+<script type="module" src="assets/js/main.js"></script>
+<noscript>
+  <div style="padding:48px;text-align:center;color:#596273">
+    本站需要 JavaScript 才能运行。请在浏览器设置中启用 JavaScript 后刷新页面。
+  </div>
+</noscript>
+</body>
+</html>

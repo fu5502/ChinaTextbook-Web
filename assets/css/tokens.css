@@ -1,0 +1,141 @@
+/* ============================================================
+   tokens.css — 设计变量
+   浅色学术主题：靛蓝为骨，暖金为魂
+   ============================================================ */
+
+:root {
+  /* ---- 品牌色 ---- */
+  --brand-900: #0a2e4d;
+  --brand-800: #0e3a63;
+  --brand-700: #12457a;
+  --brand-600: #1a5694;
+  --brand-500: #2a6bb0;
+  --brand-200: #c5daee;
+  --brand-100: #e3edf7;
+  --brand-050: #f2f7fc;
+
+  /* ---- 强调色：书页暖金 ---- */
+  --accent-700: #96682a;
+  --accent-600: #b8863b;
+  --accent-500: #cfa055;
+  --accent-100: #f7eedc;
+  --accent-050: #fdf9f1;
+
+  /* ---- 中性 ---- */
+  --ink-900: #171a20;
+  --ink-800: #23272f;
+  --ink-700: #333944;
+  --ink-500: #596273;
+  --ink-400: #8a93a5;
+  --ink-300: #aeb6c4;
+
+  --surface: #ffffff;
+  --canvas: #f5f7fa;
+  --subtle: #eef1f6;
+  --subtle-2: #e6ebf2;
+
+  --border: #dfe3ea;
+  --border-strong: #c7ceda;
+
+  /* ---- 语义 ---- */
+  --ok: #1f7a4d;
+  --ok-bg: #e8f5ee;
+  --warn: #b4690e;
+  --warn-bg: #fdf3e3;
+  --danger: #b3261e;
+  --danger-bg: #fdecea;
+  --info: #12457a;
+  --info-bg: #e3edf7;
+
+  /* ---- 字体 ---- */
+  --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB',
+    'Microsoft YaHei', 'Noto Sans CJK SC', 'Source Han Sans SC', sans-serif;
+  --font-serif: 'Source Han Serif SC', 'Noto Serif CJK SC', 'Songti SC', 'STSong', 'SimSun', serif;
+  --font-mono: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+
+  /* ---- 字阶 ---- */
+  --fs-xs: 12px;
+  --fs-sm: 13px;
+  --fs-md: 14px;
+  --fs-lg: 16px;
+  --fs-xl: 20px;
+  --fs-2xl: 26px;
+  --fs-3xl: 34px;
+  --fs-4xl: 44px;
+
+  --lh-tight: 1.35;
+  --lh-body: 1.7;
+
+  /* ---- 间距 ---- */
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  --sp-5: 24px;
+  --sp-6: 32px;
+  --sp-7: 48px;
+  --sp-8: 64px;
+
+  /* ---- 圆角 ---- */
+  --r-sm: 6px;
+  --r-md: 10px;
+  --r-lg: 14px;
+  --r-full: 999px;
+
+  /* ---- 阴影 ---- */
+  --sh-1: 0 1px 2px rgba(16, 24, 40, 0.05);
+  --sh-2: 0 2px 8px rgba(16, 24, 40, 0.07);
+  --sh-3: 0 8px 24px rgba(16, 24, 40, 0.1);
+  --sh-4: 0 16px 48px rgba(16, 24, 40, 0.14);
+
+  /* ---- 层级 ---- */
+  --z-header: 100;
+  --z-drawer: 200;
+  --z-modal: 300;
+  --z-toast: 400;
+
+  /* ---- 尺寸 ---- */
+  --header-h: 56px;
+  --sidebar-w: 264px;
+  --page-max: 1360px;
+
+  /* ---- 动效 ---- */
+  --ease: cubic-bezier(0.22, 0.61, 0.36, 1);
+  --dur-fast: 120ms;
+  --dur: 200ms;
+}
+
+/* ============================================================
+   学科色标 — 用于书卡色条、学科徽标
+   ============================================================ */
+:root {
+  --sc-default: #5a6272;
+}
+
+[data-subject='语文'] { --sc: #b3261e; }
+[data-subject='数学'] { --sc: #12457a; }
+[data-subject='英语'] { --sc: #6b3fa0; }
+[data-subject='物理'] { --sc: #0e6e7a; }
+[data-subject='化学'] { --sc: #1f7a4d; }
+[data-subject='生物学'] { --sc: #4a7c25; }
+[data-subject='历史'] { --sc: #8a5a2b; }
+[data-subject='地理'] { --sc: #0c6b8c; }
+[data-subject='地理图册'] { --sc: #0c6b8c; }
+[data-subject='人文地理'] { --sc: #0c6b8c; }
+[data-subject='道德与法治'] { --sc: #a63a3a; }
+[data-subject='思想政治'] { --sc: #a63a3a; }
+[data-subject='音乐'] { --sc: #a8407a; }
+[data-subject='美术'] { --sc: #c4632a; }
+[data-subject='艺术'] { --sc: #9b4a8f; }
+[data-subject='体育与健康'] { --sc: #2e7d6b; }
+[data-subject='信息技术'] { --sc: #3b5ba5; }
+[data-subject='通用技术'] { --sc: #5a6272; }
+[data-subject='科学'] { --sc: #157a8c; }
+[data-subject='日语'] { --sc: #7a5c3e; }
+[data-subject='俄语'] { --sc: #7a5c3e; }
+[data-subject='语文·书法练习指导'] { --sc: #8c2f39; }
+[data-subject='高等数学'] { --sc: #12457a; }
+[data-subject='线性代数'] { --sc: #1a5694; }
+[data-subject='概率论'] { --sc: #2a6bb0; }
+[data-subject='离散数学'] { --sc: #3b5ba5; }
+[data-subject='中考数学真题'] { --sc: #b8863b; }

@@ -11,6 +11,8 @@
 - 收藏 / 最近阅读 / 阅读进度：纯 `localStorage`，不依赖后端
 - 多线路：jsDelivr / Fastly / GitHub 源站自动选路，支持自定义代理前缀
 
+> 源码仓库：[github.com/fu5502/ChinaTextbook-Web](https://github.com/fu5502/ChinaTextbook-Web)
+
 > 本站为纯前端静态站点，**零构建**（原生 ES Module + 手写 CSS），可直接托管到任意静态空间。
 
 ---

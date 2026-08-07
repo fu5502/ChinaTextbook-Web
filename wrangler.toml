@@ -12,21 +12,3 @@ compatibility_date = "2025-09-15"
 
 [assets]
 directory = "."
-binding = "ASSETS"
-
-# 静态资源长缓存（浏览器/CDN 层）
-[[headers]]
-match = "/assets/*"
-name = "Cache-Control"
-value = "public, max-age=86400, must-revalidate"
-
-# 基础安全头（作用于所有响应）
-[[headers]]
-match = "/*"
-name = "X-Content-Type-Options"
-value = "nosniff"
-
-[[headers]]
-match = "/*"
-name = "Referrer-Policy"
-value = "strict-origin-when-cross-origin"

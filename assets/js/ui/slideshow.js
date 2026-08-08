@@ -39,14 +39,22 @@ function pickFeatured(all, n = 10) {
   const PRIORITY = [
     ['小学', '语文'],
     ['小学', '数学'],
+    ['小学', '英语'],
+    ['初中', '语文'],
     ['初中', '数学'],
     ['初中', '英语'],
-    ['高中', '物理'],
-    ['高中', '历史'],
-    ['小学', '英语'],
-    ['高中', '化学'],
+    ['初中', '物理'],
     ['初中', '生物'],
+    ['初中', '地理'],
+    ['高中', '语文'],
+    ['高中', '数学'],
+    ['高中', '英语'],
+    ['高中', '物理'],
+    ['高中', '化学'],
+    ['高中', '生物'],
+    ['高中', '历史'],
     ['高中', '地理'],
+    ['高中', '政治'],
   ];
   const seen = new Set();
   const out = [];
@@ -103,7 +111,7 @@ function buildCover(book, i) {
 
 /* ---------------- 对外：构建轮播 ---------------- */
 export function buildSlideshow(all) {
-  const items = pickFeatured(all, 10);
+  const items = pickFeatured(all, 18);
   if (!items.length) return null;
 
   const covers = items.map((b, i) => buildCover(b, i));
@@ -112,7 +120,7 @@ export function buildSlideshow(all) {
   const track = h('div.ss-track', ...covers, ...clones);
 
   const dots = items.map((_, i) =>
-    h('button.ss-dot', { type: 'button', 'aria-label': `第 ${i + 1} 组`, dataset: { i: String(i) } })
+    h('button.ss-dot', { type: 'button', 'aria-label': `第 ${i + 1} 张`, dataset: { i: String(i) } })
   );
   const intervalBtns = INTERVALS.map((s) =>
     h('button.ss-int', { type: 'button', dataset: { s: String(s) }, 'aria-label': `${s} 秒切换` }, `${s}s`)
@@ -188,6 +196,8 @@ function createController(root, count, refs) {
       void track.offsetHeight;
       track.style.transition = '';
     }
+    // 当前封面位高亮（含克隆卡，index 进入克隆区时高亮对应克隆）
+    Array.from(track.children).forEach((c, k) => c.classList.toggle('on', k === index));
     dots.forEach((d, k) => d.classList.toggle('on', k === (index % N)));
   }
 

@@ -66,6 +66,18 @@
   box-shadow: var(--sh-3);
 }
 
+/* 当前封面位（轮播焦点）：品牌色描边 + 轻微放大，明确「一次滚一张」 */
+.ss-cover.on {
+  z-index: 2;
+  box-shadow: 0 0 0 3px var(--brand-500), var(--sh-3);
+}
+.ss-cover.on .bc-cover {
+  transform: scale(1.04);
+}
+.ss-cover .bc-cover {
+  transition: transform var(--dur) var(--ease);
+}
+
 /* 封面本体：铺满卡片，按原比例完整显示（不裁切） */
 .ss-cover .bc-cover {
   width: 100%;

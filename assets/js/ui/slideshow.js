@@ -210,11 +210,13 @@ function createController(root, count, refs) {
       jumpTimer = setTimeout(() => {
         index -= N;
         apply(false);
+        resetProgress();
       }, 620);
     }
   }
   function next() {
     go(index + 1);
+    resetProgress(); // 前进后归零计时，否则 loop 会每帧继续触发 next，导致一次性滚飞
   }
   function prev() {
     if (index === 0) {
@@ -223,6 +225,7 @@ function createController(root, count, refs) {
     } else {
       go(index - 1);
     }
+    resetProgress();
   }
 
   function resetProgress() {
@@ -266,6 +269,7 @@ function createController(root, count, refs) {
   dots.forEach((d, k) =>
     d.addEventListener('click', () => {
       go(k);
+      resetProgress();
     })
   );
   intervalBtns.forEach((b) =>
@@ -294,6 +298,7 @@ function createController(root, count, refs) {
   root.addEventListener('mouseleave', onLeave);
   const onVis = () => {
     hidden = document.hidden;
+    if (!hidden) last = 0; // 切回前台时重置计时基准，避免 dt 暴增一次性跳多张
     root.classList.toggle('paused', effectivePaused());
   };
   document.addEventListener('visibilitychange', onVis);

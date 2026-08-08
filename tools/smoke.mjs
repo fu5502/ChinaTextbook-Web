@@ -342,6 +342,13 @@ async function main() {
     const pz = await evalJs(`({p:document.querySelector('.slideshow').classList.contains('paused'), btn:document.querySelector('.slideshow .ss-pause').classList.contains('on')})`);
     check('轮播可暂停', pz.p && pz.btn, JSON.stringify(pz));
     await evalJs(`document.querySelector('.slideshow .ss-pause').click(); document.querySelector('.slideshow .ss-int[data-s="5"]').click();`);
+    /* 自动播放：一个间隔只滚一张，不应一次性飞出视口 */
+    await evalJs(`(()=>{const r=document.querySelector('.slideshow'); if(r.classList.contains('paused')) r.querySelector('.ss-pause').click(); const b=r.querySelector('.ss-int[data-s="3"]'); if(b) b.click();})()`);
+    const a1 = await evalJs(`(()=>{const r=document.querySelector('.slideshow');const t=r.querySelector('.ss-track');const m=getComputedStyle(t).transform;const tx=m==='none'?0:parseFloat(m.split(',')[4]);const f=t.children[0];const cs=getComputedStyle(t);const gap=parseFloat(cs.columnGap||cs.gap||'0')||0;const step=f.getBoundingClientRect().width+gap;const on=[...r.querySelectorAll('.ss-dot')].findIndex(d=>d.classList.contains('on'));return {tx,step,on,N:r.querySelectorAll('.ss-dot').length};})()`);
+    await sleep(3700);
+    const a2 = await evalJs(`(()=>{const r=document.querySelector('.slideshow');const t=r.querySelector('.ss-track');const m=getComputedStyle(t).transform;const tx=m==='none'?0:parseFloat(m.split(',')[4]);const on=[...r.querySelectorAll('.ss-dot')].findIndex(d=>d.classList.contains('on'));return {tx,on};})()`);
+    check('自动播放逐张推进', a2.on === (a1.on + 1) % a1.N, `on1=${a1.on} on2=${a2.on}`);
+    check('自动播放不飞走', a2.tx > -(a1.step * (a1.N + 1)), `tx2=${a2.tx.toFixed(0)} step=${a1.step.toFixed(0)} N=${a1.N}`);
     noErrors('首页');
     await shot('01-home');
 

@@ -1,9 +1,10 @@
 /* ============================================================
-   slideshow.js — 首页精选教材轮播
+   slideshow.js — 首页精选教材「封面轮播」
    ------------------------------------------------------------
-   · 精选若干本教材作为幻灯片，复用封面引擎 registerCover 渲染真实首页缩图
-   · 自动切换：默认 5s，可选手动 3 / 5 / 10 / 15 秒，或暂停
-   · 悬停 / 标签页切到后台时自动暂停；圆点 / 左右箭头 / 键盘左右键导航
+   · 一行平铺多张真实封面缩图（桌面 5 张，平板 3、手机 2）
+   · 自动横向滚动轮播，默认 5s，可选手动 3 / 5 / 10 / 15 秒，或暂停
+   · 悬停 / 标签页切到后台时自动暂停；圆点 / 左右箭头 / 键盘导航
+   · 封面按 PDF 首页「原比例」缩放（aspect-ratio: A4 + object-fit: contain），不裁切
    · 偏好（间隔、是否暂停）持久化到 localStorage
    ============================================================ */
 
@@ -18,6 +19,7 @@ const IC_PREV = '<path d="M15 6l-6 6 6 6"/>';
 const IC_NEXT = '<path d="M9 6l6 6-6 6"/>';
 
 const INTERVALS = [3, 5, 10, 15];
+const VIS = 5; // 桌面同时可见的封面数（用于无缝克隆）
 const STORE_INT = 'tb:slideInterval';
 const STORE_PAUSE = 'tb:slidePaused';
 
@@ -32,7 +34,7 @@ export function destroySlideshow() {
 }
 
 /* ---------------- 精选书目 ---------------- */
-function pickFeatured(all, n = 6) {
+function pickFeatured(all, n = 10) {
   // 优先覆盖主要学段 + 学科，且文件不要太大（封面首屏更快出图）
   const PRIORITY = [
     ['小学', '语文'],
@@ -44,6 +46,7 @@ function pickFeatured(all, n = 6) {
     ['小学', '英语'],
     ['高中', '化学'],
     ['初中', '生物'],
+    ['高中', '地理'],
   ];
   const seen = new Set();
   const out = [];
@@ -69,8 +72,8 @@ function pickFeatured(all, n = 6) {
   return out.slice(0, n);
 }
 
-/* ---------------- 单张幻灯片 ---------------- */
-function buildSlide(book, i) {
+/* ---------------- 单张封面 ---------------- */
+function buildCover(book, i) {
   const coverEl = h(
     'div.bc-cover',
     h(
@@ -91,29 +94,25 @@ function buildSlide(book, i) {
   // 复用书卡封面引擎（真实首页缩图 + 学科兜底封面）
   registerCover(coverEl, book);
 
-  const card = h(
-    'a.ss-card',
-    { href: build('book', {}, book.id), 'aria-label': book.title },
-    h('div.ss-cover', coverEl),
-    h(
-      'div.ss-info',
-      h('span.ss-kicker', (book.stage || '') + (book.subject ? ' · ' + book.subject : '')),
-      h('h3.ss-title', book.title),
-      h('div.ss-meta', [book.edition, book.grade, book.vol].filter(Boolean).join(' · ')),
-      h('span.ss-cta', icon(IC_ARROW, '', 16), '去阅读')
-    )
+  return h(
+    'a.ss-cover.slide',
+    { href: build('book', {}, book.id), 'aria-label': book.title, dataset: { index: String(i) } },
+    coverEl
   );
-  return h('div.slide', { dataset: { index: String(i) } }, card);
 }
 
 /* ---------------- 对外：构建轮播 ---------------- */
 export function buildSlideshow(all) {
-  const items = pickFeatured(all, 6);
+  const items = pickFeatured(all, 10);
   if (!items.length) return null;
 
-  const track = h('div.ss-track', ...items.map((b, i) => buildSlide(b, i)));
+  const covers = items.map((b, i) => buildCover(b, i));
+  // 末尾追加「可见数量」的克隆，实现向前无缝循环
+  const clones = items.slice(0, Math.min(VIS, items.length)).map((b, i) => buildCover(b, i + items.length));
+  const track = h('div.ss-track', ...covers, ...clones);
+
   const dots = items.map((_, i) =>
-    h('button.ss-dot', { type: 'button', 'aria-label': `第 ${i + 1} 张`, dataset: { i: String(i) } })
+    h('button.ss-dot', { type: 'button', 'aria-label': `第 ${i + 1} 组`, dataset: { i: String(i) } })
   );
   const intervalBtns = INTERVALS.map((s) =>
     h('button.ss-int', { type: 'button', dataset: { s: String(s) }, 'aria-label': `${s} 秒切换` }, `${s}s`)
@@ -122,13 +121,21 @@ export function buildSlideshow(all) {
 
   const root = h(
     'section.slideshow',
-    h('div.ss-viewport', track),
-    h('button.ss-arrow.ss-prev', { type: 'button', 'aria-label': '上一张', title: '上一张' }, icon(IC_PREV, '', 18)),
-    h('button.ss-arrow.ss-next', { type: 'button', 'aria-label': '下一张', title: '下一张' }, icon(IC_NEXT, '', 18)),
-    h('div.ss-dots', ...dots),
+    h('div.ss-progress', h('i')),
+    h(
+      'div.ss-head',
+      h('h2.ss-title', '精选教材'),
+      h('p.ss-sub', '公益开放 · 免登录在线阅读')
+    ),
+    h(
+      'div.ss-viewport',
+      track,
+      h('button.ss-arrow.ss-prev', { type: 'button', 'aria-label': '上一组', title: '上一组' }, icon(IC_PREV, '', 18)),
+      h('button.ss-arrow.ss-next', { type: 'button', 'aria-label': '下一组', title: '下一组' }, icon(IC_NEXT, '', 18))
+    ),
     h(
       'div.ss-bar',
-      h('div.ss-progress', h('i')),
+      h('div.ss-dots', ...dots),
       h(
         'div.ss-controls',
         h('span.ss-label', '自动切换'),
@@ -138,7 +145,7 @@ export function buildSlideshow(all) {
     )
   );
 
-  active = createController(root, items.length);
+  active = createController(root, items.length, { track, dots, intervalBtns, pauseBtn });
   return root;
 }
 
@@ -147,14 +154,9 @@ function clampInt(v) {
   return INTERVALS.includes(v) ? v : 5;
 }
 
-function createController(root, count) {
-  const track = root.querySelector('.ss-track');
-  const dots = [...root.querySelectorAll('.ss-dot')];
-  const intBtns = [...root.querySelectorAll('.ss-int')];
-  const pauseBtn = root.querySelector('.ss-pause');
-  const prevBtn = root.querySelector('.ss-prev');
-  const nextBtn = root.querySelector('.ss-next');
-  const bar = root.querySelector('.ss-progress > i');
+function createController(root, count, refs) {
+  const { track, dots, intervalBtns, pauseBtn } = refs;
+  const N = count;
 
   let index = 0;
   let interval = clampInt(Number(localStorage.getItem(STORE_INT)));
@@ -165,27 +167,73 @@ function createController(root, count) {
   let last = 0;
   let raf = null;
   let mounted = true;
+  let jumpTimer = null;
   const offs = [];
 
   const effectivePaused = () => userPaused || hovering || hidden;
 
-  function render() {
-    track.style.transform = `translateX(${-index * 100}%)`;
-    dots.forEach((d, k) => d.classList.toggle('on', k === index));
+  function stepPx() {
+    const first = track.children[0];
+    if (!first) return 0;
+    const cs = getComputedStyle(track);
+    const gap = parseFloat(cs.columnGap || cs.gap || '0') || 0;
+    return first.getBoundingClientRect().width + gap;
+  }
+
+  function apply(animate) {
+    track.style.transition = animate ? '' : 'none';
+    track.style.transform = `translateX(${-index * stepPx()}px)`;
+    if (!animate) {
+      // 强制回流后恢复过渡，避免瞬移被动画化
+      void track.offsetHeight;
+      track.style.transition = '';
+    }
+    dots.forEach((d, k) => d.classList.toggle('on', k === (index % N)));
+  }
+
+  function go(i) {
+    index = i;
+    apply(true);
+    if (index >= N) {
+      // 进入克隆区（视觉等同起点）→ 过渡结束后无感跳回
+      clearTimeout(jumpTimer);
+      jumpTimer = setTimeout(() => {
+        index -= N;
+        apply(false);
+      }, 620);
+    }
+  }
+  function next() {
+    go(index + 1);
+  }
+  function prev() {
+    if (index === 0) {
+      index = N - 1;
+      apply(false);
+    } else {
+      go(index - 1);
+    }
+  }
+
+  function resetProgress() {
     bar.style.transform = 'scaleX(0)';
     elapsed = 0;
-    intBtns.forEach((b) => b.classList.toggle('on', !userPaused && Number(b.dataset.s) === interval));
+  }
+
+  const bar = root.querySelector('.ss-progress > i');
+  const prevBtn = root.querySelector('.ss-prev');
+  const nextBtn = root.querySelector('.ss-next');
+
+  function render() {
+    intervalBtns.forEach((b) => b.classList.toggle('on', !userPaused && Number(b.dataset.s) === interval));
     pauseBtn.classList.toggle('on', userPaused);
     pauseBtn.innerHTML = '';
     pauseBtn.append(icon(userPaused ? IC_PLAY : IC_PAUSE, '', 16));
     pauseBtn.setAttribute('aria-label', userPaused ? '继续自动播放' : '暂停自动播放');
     pauseBtn.title = userPaused ? '继续' : '暂停';
     root.classList.toggle('paused', effectivePaused());
-  }
-
-  function goTo(i) {
-    index = ((i % count) + count) % count;
-    render();
+    apply(true);
+    resetProgress();
   }
 
   function loop(ts) {
@@ -197,18 +245,20 @@ function createController(root, count) {
       elapsed += dt;
       const frac = Math.min(1, elapsed / (interval * 1000));
       bar.style.transform = `scaleX(${frac})`;
-      if (elapsed >= interval * 1000) goTo(index + 1);
+      if (elapsed >= interval * 1000) next();
     }
     raf = requestAnimationFrame(loop);
   }
 
   // ---- 事件 ----
-  const onPrev = () => goTo(index - 1);
-  const onNext = () => goTo(index + 1);
-  prevBtn.addEventListener('click', onPrev);
-  nextBtn.addEventListener('click', onNext);
-  dots.forEach((d, k) => d.addEventListener('click', () => goTo(k)));
-  intBtns.forEach((b) =>
+  prevBtn.addEventListener('click', prev);
+  nextBtn.addEventListener('click', next);
+  dots.forEach((d, k) =>
+    d.addEventListener('click', () => {
+      go(k);
+    })
+  );
+  intervalBtns.forEach((b) =>
     b.addEventListener('click', () => {
       interval = Number(b.dataset.s);
       localStorage.setItem(STORE_INT, String(interval));
@@ -238,17 +288,20 @@ function createController(root, count) {
   };
   document.addEventListener('visibilitychange', onVis);
   const onKey = (e) => {
-    if (e.key === 'ArrowLeft') goTo(index - 1);
-    else if (e.key === 'ArrowRight') goTo(index + 1);
+    if (e.key === 'ArrowLeft') prev();
+    else if (e.key === 'ArrowRight') next();
   };
   root.addEventListener('keydown', onKey);
+  const onResize = () => apply(false);
+  window.addEventListener('resize', onResize);
 
-  offs.push(() => prevBtn.removeEventListener('click', onPrev));
-  offs.push(() => nextBtn.removeEventListener('click', onNext));
+  offs.push(() => prevBtn.removeEventListener('click', prev));
+  offs.push(() => nextBtn.removeEventListener('click', next));
   offs.push(() => root.removeEventListener('mouseenter', onEnter));
   offs.push(() => root.removeEventListener('mouseleave', onLeave));
   offs.push(() => document.removeEventListener('visibilitychange', onVis));
   offs.push(() => root.removeEventListener('keydown', onKey));
+  offs.push(() => window.removeEventListener('resize', onResize));
 
   render();
   raf = requestAnimationFrame(loop);
@@ -257,6 +310,7 @@ function createController(root, count) {
     destroy() {
       mounted = false;
       if (raf) cancelAnimationFrame(raf);
+      clearTimeout(jumpTimer);
       offs.forEach((f) => f());
     },
   };

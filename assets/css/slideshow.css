@@ -1,5 +1,6 @@
 /* ============================================================
-   slideshow.css — 首页精选教材轮播
+   slideshow.css — 首页精选教材「封面轮播」
+   一行平铺多张封面，按 PDF 首页原比例缩放，不裁切
    ============================================================ */
 
 .slideshow {
@@ -7,130 +8,85 @@
   margin-bottom: var(--sp-7);
   border-radius: var(--r-lg);
   overflow: hidden;
-  background: var(--surface);
+  background: linear-gradient(180deg, var(--surface), var(--subtle));
   border: 1px solid var(--border);
   box-shadow: var(--sh-2);
+  padding: var(--sp-5) var(--sp-5) 0;
 }
 
+/* 标题行 */
+.ss-head {
+  display: flex;
+  align-items: baseline;
+  gap: var(--sp-3);
+  margin-bottom: var(--sp-4);
+}
+.ss-title {
+  margin: 0;
+  font-family: var(--font-serif);
+  font-size: var(--fs-lg);
+  font-weight: 700;
+  color: var(--ink-900);
+  letter-spacing: 0.01em;
+}
+.ss-sub {
+  margin: 0;
+  font-size: var(--fs-xs);
+  color: var(--ink-400);
+}
+
+/* 视口（裁切轨道） */
 .ss-viewport {
+  position: relative;
   overflow: hidden;
 }
 
 .ss-track {
   display: flex;
-  transition: transform 600ms var(--ease);
+  gap: var(--sp-4);
   will-change: transform;
+  transition: transform 600ms var(--ease);
+  padding-bottom: var(--sp-2);
 }
 
-.slide {
-  flex: 0 0 100%;
-  min-width: 0;
-}
-
-.ss-card {
-  display: flex;
-  align-items: stretch;
-  gap: var(--sp-5);
-  min-height: 320px;
-  text-decoration: none;
-  color: inherit;
-}
-
-/* 封面（复用 .bc-cover） */
+/* 单张封面：桌面 5 张一行 */
 .ss-cover {
-  width: 300px;
-  flex: none;
-  align-self: stretch;
+  flex: 0 0 calc((100% - 4 * var(--sp-4)) / 5);
+  aspect-ratio: 1 / 1.414; /* A4 原比例，与 PDF 首页一致 */
   position: relative;
+  border-radius: var(--r-md);
+  overflow: hidden;
+  background: var(--subtle);
+  box-shadow: var(--sh-1);
+  text-decoration: none;
+  transition: transform var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
 }
+.ss-cover:hover {
+  transform: translateY(-5px);
+  box-shadow: var(--sh-3);
+}
+
+/* 封面本体：铺满卡片，按原比例完整显示（不裁切） */
 .ss-cover .bc-cover {
   width: 100%;
   height: 100%;
-  aspect-ratio: auto;
+  aspect-ratio: 1 / 1.414;
   border-radius: 0;
+  background: var(--subtle);
+}
+.ss-cover .bc-cover-img {
+  object-fit: contain;
 }
 .ss-cover .bc-cover-fallback .fb-title {
-  font-size: 22px;
+  font-size: 16px;
   -webkit-line-clamp: 5;
   line-clamp: 5;
 }
 
-/* 文字信息 */
-.ss-info {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  gap: var(--sp-3);
-  padding: var(--sp-5) var(--sp-6);
-}
-.ss-kicker {
-  display: inline-flex;
-  align-items: center;
-  align-self: flex-start;
-  height: 22px;
-  padding: 0 10px;
-  border-radius: var(--r-full);
-  background: var(--accent-050);
-  color: var(--accent-700);
-  font-size: 12px;
-  letter-spacing: 0.02em;
-}
-.ss-title {
-  font-family: var(--font-serif);
-  font-size: var(--fs-2xl);
-  line-height: 1.35;
-  color: var(--ink-900);
-  font-weight: 700;
-  letter-spacing: 0.01em;
-  display: -webkit-box;
-  -webkit-line-clamp: 3;
-  line-clamp: 3;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-  word-break: break-word;
-}
-.ss-meta {
-  font-size: var(--fs-sm);
-  color: var(--ink-500);
-}
-.ss-cta {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  align-self: flex-start;
-  margin-top: var(--sp-2);
-  padding: 9px 18px;
-  border-radius: var(--r-full);
-  background: var(--brand-600);
-  color: #fff;
-  font-size: var(--fs-sm);
-  font-weight: 600;
-  transition: background var(--dur) var(--ease), transform var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
-}
-.ss-cta svg {
-  width: 16px;
-  height: 16px;
-  stroke: currentColor;
-  fill: none;
-  stroke-width: 2;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  transition: transform var(--dur) var(--ease);
-}
-.ss-card:hover .ss-cta {
-  background: var(--brand-700);
-  box-shadow: var(--sh-2);
-}
-.ss-card:hover .ss-cta svg {
-  transform: translateX(3px);
-}
-
-/* 左右箭头 */
+/* 左右箭头（悬停显示） */
 .ss-arrow {
   position: absolute;
-  top: 50%;
+  top: calc(50% - 14px);
   transform: translateY(-50%);
   width: 40px;
   height: 40px;
@@ -157,10 +113,10 @@
   stroke-linejoin: round;
 }
 .ss-prev {
-  left: 14px;
+  left: 12px;
 }
 .ss-next {
-  right: 14px;
+  right: 12px;
 }
 .slideshow:hover .ss-arrow {
   opacity: 1;
@@ -177,13 +133,9 @@
 
 /* 圆点指示器 */
 .ss-dots {
-  position: absolute;
-  left: 50%;
-  bottom: 52px;
-  transform: translateX(-50%);
   display: flex;
-  gap: 8px;
-  z-index: 3;
+  gap: 7px;
+  flex-wrap: wrap;
 }
 .ss-dot {
   width: 8px;
@@ -191,15 +143,14 @@
   padding: 0;
   border: none;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.55);
-  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.12);
+  background: var(--ink-300);
   cursor: pointer;
   transition: background var(--dur) var(--ease), width var(--dur) var(--ease);
 }
 .ss-dot.on {
   width: 22px;
   border-radius: var(--r-full);
-  background: #fff;
+  background: var(--brand-600);
 }
 .ss-dot:focus-visible {
   outline: 2px solid var(--brand-500);
@@ -208,19 +159,16 @@
 
 /* 底部控制条 */
 .ss-bar {
-  position: relative;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: var(--sp-4);
-  padding: 10px var(--sp-5);
-  border-top: 1px solid var(--border);
-  background: var(--surface);
+  padding: var(--sp-4) 0 var(--sp-5);
 }
 .ss-progress {
   position: absolute;
   left: 0;
-  top: -2px;
+  top: 0;
   width: 100%;
   height: 2px;
   background: transparent;
@@ -238,8 +186,6 @@
   display: flex;
   align-items: center;
   gap: var(--sp-3);
-  width: 100%;
-  justify-content: space-between;
 }
 .ss-label {
   font-size: 12px;
@@ -305,36 +251,28 @@
   background: var(--accent-050);
 }
 
-/* 暂停态：降低进度条与箭头可见性提示 */
+/* 暂停态：降低进度条可见性提示 */
 .slideshow.paused .ss-progress > i {
   background: var(--ink-300);
 }
 
-/* 响应式 */
-@media (max-width: 768px) {
-  .ss-card {
-    flex-direction: column;
-    min-height: 0;
-    gap: 0;
-  }
+/* 响应式：平板 3 张、手机 2 张一行 */
+@media (max-width: 980px) {
   .ss-cover {
-    width: 100%;
-    height: 220px;
+    flex-basis: calc((100% - 2 * var(--sp-4)) / 3);
   }
-  .ss-cover .bc-cover {
-    border-radius: 0;
-  }
-  .ss-info {
-    padding: var(--sp-4) var(--sp-4) var(--sp-5);
-    gap: var(--sp-2);
-  }
-  .ss-title {
-    font-size: var(--fs-xl);
-  }
-  .ss-dots {
-    bottom: 56px;
+}
+@media (max-width: 600px) {
+  .ss-cover {
+    flex-basis: calc((100% - 1 * var(--sp-4)) / 2);
   }
   .ss-arrow {
+    display: none;
+  }
+  .ss-head {
+    margin-bottom: var(--sp-3);
+  }
+  .ss-label {
     display: none;
   }
 }

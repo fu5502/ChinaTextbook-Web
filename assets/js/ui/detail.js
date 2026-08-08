@@ -11,6 +11,7 @@ import { downloadBook } from '../download.js';
 import { bookCard } from './bookcard.js';
 import { emptyState } from './browse.js';
 import { toast } from './toast.js';
+import { registerCover } from '../cover.js';
 
 const IC_READ = '<path d="M4 4.5A2.5 2.5 0 0 1 6.5 2H20v18H6.5A2.5 2.5 0 0 0 4 22.5v-18z"/><path d="M4 17.5A2.5 2.5 0 0 1 6.5 15H20"/>';
 const IC_DOWN = '<path d="M12 3v13"/><path d="M7 11.5l5 5 5-5"/><path d="M4 21h16"/>';
@@ -56,10 +57,24 @@ export function renderDetail(app, route) {
   // ---- 主卡 ----
   const favBtn = favButton(b);
 
+  const coverEl = h(
+    'div.detail-cover',
+    h(
+      'div.bc-cover-fallback',
+      h('span.fb-spine'),
+      h('div.fb-top', b.subject || b.stage || '教材'),
+      h('div.fb-mid', h('span.fb-title', b.title)),
+      h('div.fb-bot', [b.edition, b.grade, b.vol].filter(Boolean).join(' · '))
+    ),
+    h('img.bc-cover-img', { alt: '', loading: 'lazy', decoding: 'async', draggable: false, referrerpolicy: 'no-referrer' })
+  );
+  registerCover(coverEl, b);
+
   page.append(
     h(
       'div.card',
-      { style: { padding: 'var(--sp-6)', display: 'grid', gridTemplateColumns: 'minmax(0,1fr) auto', gap: 'var(--sp-5)', alignItems: 'start' } },
+      { style: { padding: 'var(--sp-6)', display: 'grid', gridTemplateColumns: 'auto minmax(0,1fr) auto', gap: 'var(--sp-5)', alignItems: 'start' } },
+      coverEl,
       h(
         'div',
         { style: { minWidth: 0 } },

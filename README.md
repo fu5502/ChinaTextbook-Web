@@ -28,6 +28,7 @@
 | 分卷拼接 | 多分片二进制按需拼接为单一连续 PDF 字节流（`tools/test-transport.mjs` 已字节级验证） |
 | 数据 | `data/catalog.json`（索引），由 `tools/build-catalog.mjs` 从上游仓库 Git tree 生成 |
 | 状态持久化 | `localStorage`（收藏 / 最近阅读 / 阅读进度 / 线路偏好），隐私模式自动降级为内存态 |
+| 封面缩图 | 复用阅读器通道按需渲染每本教材 PDF 第 1 页为封面（IndexedDB 缓存 30 天），未加载时显示学科主题色兜底封面 |
 
 ### 目录结构
 

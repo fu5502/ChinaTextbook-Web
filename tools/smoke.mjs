@@ -315,6 +315,8 @@ async function main() {
     await hardReload(`${BASE}/#/`, 2000);
     await waitFor(() => evalJs(`document.querySelectorAll('.stage-card').length > 0`), 10000);
     await evalJs(`localStorage.clear()`);
+    // 主流程关闭封面缩图引擎（避免 1900 本按需渲染拖慢整套时序；封面功能单独验证）
+    await evalJs(`window.__NO_COVER__ = true`);
 
     /* ---------- 1. 首页 ---------- */
     console.log('\n[1] 首页');
@@ -399,9 +401,9 @@ async function main() {
     const pg = await evalJs(`document.querySelector('.rd-page-input')?.value`);
     check('翻页生效', Number(pg) > 1, `当前第 ${pg} 页`);
     await evalJs(`(()=>{const t=[...document.querySelectorAll('.rd-tab')][1];t&&t.click();return 1})()`);
-    await sleep(900);
-    const olOk = await evalJs(
-      `!!document.querySelector('.ol-list') || !!document.querySelector('.side-empty')`
+    const olOk = await waitFor(
+      () => evalJs(`!!document.querySelector('.ol-list') || !!document.querySelector('.side-empty')`),
+      5000
     );
     check('目录面板可用', olOk === true);
     await shot('10-reader-outline');
@@ -457,6 +459,28 @@ async function main() {
     await gotoHash('#/nope/xxx', { waitMs: 500 });
     check('404 兜底', (await evalJs(`!!document.querySelector('.state, .state-error, .empty')`)) === true);
     noErrors('404');
+
+    /* ---------- 14. 封面缩图引擎（显式启用） ---------- */
+    console.log('\n[14] 封面缩图引擎');
+    // 主流程通过 window.__NO_COVER__ 关闭了封面；此处显式打开。
+    // 注意：带 # 的 Page.navigate 对 Chrome 只是同文档 hash 变更，不会重置 window，
+    // 因此用 gotoHash（hash 跳转）即可，window.__NO_COVER__ 已为 false。
+    await evalJs('window.__NO_COVER__ = false');
+    await gotoHash('#/browse?stage=小学&subject=数学', {
+      waitMs: 1500,
+      ready: () => evalJs(`document.querySelectorAll('.book-card').length > 0`),
+      stable: '.book-card',
+    });
+    // 等封面引擎真正渲染出一张真实缩图（loaded）
+    const coverLoaded = await waitFor(
+      () => evalJs(`[...document.querySelectorAll('.bc-cover')].some(c => c.classList.contains('loaded'))`),
+      45000
+    );
+    const coverStat = await evalJs(`(()=>{const cs=[...document.querySelectorAll('.bc-cover')];return {total:cs.length, loaded:cs.filter(c=>c.classList.contains('loaded')).length, failed:cs.filter(c=>c.classList.contains('failed')).length};})()`);
+    console.log('    dbg:', JSON.stringify(coverStat));
+    check('封面引擎渲染出真实缩图', coverLoaded === true, `loaded=${coverStat.loaded} failed=${coverStat.failed} 共 ${coverStat.total} 张`);
+    noErrors('封面');
+    await shot('14-covers');
   } finally {
     /* ---------- 汇总 ---------- */
     console.log('\n' + '─'.repeat(56));

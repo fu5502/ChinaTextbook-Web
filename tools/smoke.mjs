@@ -445,6 +445,39 @@ async function main() {
     noErrors('移动端首页');
     await shot('11-mobile-home');
 
+    /* 继续阅读：左右翻页轮播（无横向滚动条） */
+    // 制造足够多的“最近在读”以触发溢出与翻页（移动端视口更窄必然溢出）
+    await gotoHash('#/browse?stage=小学', { waitMs: 500, ready: () => evalJs(`document.querySelectorAll('.book-card[data-id]').length>0`), stable: '.book-card' });
+    const seedIds = await evalJs(`JSON.stringify([...document.querySelectorAll('.book-card[data-id]')].slice(0,8).map(c=>c.dataset.id))`);
+    await evalJs(`(()=>{const ids=${seedIds};localStorage.setItem('tb:recent', JSON.stringify(ids.map((id,i)=>({id,page:1,pages:10,at:Date.now()-i*1000}))));})()`);
+    await gotoHash('#/', { waitMs: 500, ready: () => evalJs(`document.querySelector('.rc-wrap')!=null`), stable: '.rc-wrap' });
+    const rc = await evalJs(`(()=>{
+      const wrap=document.querySelector('.rc-wrap');
+      if(!wrap) return {exists:false};
+      const track=wrap.querySelector('.rc-track');
+      const prev=wrap.querySelector('.rc-prev');
+      const next=wrap.querySelector('.rc-next');
+      const m=getComputedStyle(track).transform;
+      const tx=m==='none'?0:parseFloat(m.split(',')[4]);
+      const vp=wrap.querySelector('.rc-viewport');
+      const overflow = track.scrollWidth - vp.clientWidth;
+      return {exists:true, cards:track.children.length, hasNext:!!next, hasPrev:!!prev, nextDisabled:!!next?.disabled, prevDisabled:!!prev?.disabled, tx, overflow};
+    })()`);
+    check('继续阅读轮播渲染', rc.exists && rc.cards >= 1 && rc.hasNext && rc.hasPrev, JSON.stringify(rc));
+    if (rc.exists && rc.overflow > 0) {
+      check('起点上一组按钮禁用', rc.prevDisabled === true, `prevDisabled=${rc.prevDisabled}`);
+      check('有溢出时下一組可用', rc.nextDisabled === false, `nextDisabled=${rc.nextDisabled}`);
+      await evalJs(`document.querySelector('.rc-next').click()`);
+      await sleep(640);
+      const rc2 = await evalJs(`(()=>{const t=document.querySelector('.rc-track');const m=getComputedStyle(t).transform;return {tx:m==='none'?0:parseFloat(m.split(',')[4])};})()`);
+      check('继续阅读可向下一组', rc2.tx < rc.tx - 1, `tx1=${rc.tx} tx2=${rc2.tx}`);
+      await evalJs(`document.querySelector('.rc-prev').click()`);
+      await sleep(640);
+      const rc3 = await evalJs(`(()=>{const t=document.querySelector('.rc-track');const m=getComputedStyle(t).transform;return {tx:m==='none'?0:parseFloat(m.split(',')[4])};})()`);
+      check('继续阅读可回到起点', Math.abs(rc3.tx) < 1, `tx3=${rc3.tx}`);
+    }
+    noErrors('继续阅读');
+
     await gotoHash('#/browse', { waitMs: 500, ready: () => evalJs(`document.querySelectorAll('.book-card').length > 0`), stable: '.book-card' });
     await shot('12-mobile-browse');
 

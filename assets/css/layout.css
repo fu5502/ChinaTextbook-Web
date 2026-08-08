@@ -308,17 +308,71 @@
   color: var(--ink-400);
 }
 
-/* 横向滚动条（最近在读） */
-.hscroll {
+/* 继续阅读：左右翻页轮播（无横向滚动条） */
+.rc-wrap {
+  position: relative;
+}
+.rc-viewport {
+  overflow: hidden;
+}
+.rc-track {
   display: flex;
   gap: var(--sp-3);
-  overflow-x: auto;
-  padding-bottom: var(--sp-2);
-  scroll-snap-type: x proximity;
+  will-change: transform;
+  transition: transform 500ms var(--ease);
 }
-.hscroll > * {
+.rc-track > * {
   flex: 0 0 268px;
-  scroll-snap-align: start;
+}
+.rc-arrow {
+  position: absolute;
+  top: calc(50% - 18px);
+  transform: translateY(-50%);
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.92);
+  color: var(--ink-700);
+  box-shadow: var(--sh-2);
+  cursor: pointer;
+  z-index: 3;
+  transition: opacity var(--dur) var(--ease), background var(--dur) var(--ease), color var(--dur) var(--ease);
+}
+.rc-arrow svg {
+  width: 18px;
+  height: 18px;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.rc-prev {
+  left: 10px;
+}
+.rc-next {
+  right: 10px;
+}
+.rc-arrow:hover {
+  background: #fff;
+  color: var(--brand-700);
+}
+.rc-arrow:disabled {
+  opacity: 0;
+  pointer-events: none;
+}
+.rc-arrow:focus-visible {
+  outline: 2px solid var(--brand-500);
+  outline-offset: 2px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .rc-track {
+    transition: none;
+  }
 }
 
 /* ---------------- 浏览页 ---------------- */

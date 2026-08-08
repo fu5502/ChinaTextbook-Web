@@ -10,6 +10,7 @@ import { bookCard } from './bookcard.js';
 import { buildSlideshow } from './slideshow.js';
 
 const IC_ARROW = '<path d="M5 12h14M13 6l6 6-6 6"/>';
+const IC_LARR = '<path d="M19 12H5M11 6l-6 6 6 6"/>';
 const IC_BOOK = '<path d="M4 4.5A2.5 2.5 0 0 1 6.5 2H20v18H6.5A2.5 2.5 0 0 0 4 22.5v-18z"/><path d="M4 17.5A2.5 2.5 0 0 1 6.5 15H20"/>';
 const IC_HEART = '<path d="M12 21s-7.5-4.7-9.3-9A5.3 5.3 0 0 1 12 6.6 5.3 5.3 0 0 1 21.3 12c-1.8 4.3-9.3 9-9.3 9z"/>';
 const IC_CLOCK = '<circle cx="12" cy="12" r="9"/><path d="M12 7.5V12l3 1.8"/>';
@@ -152,6 +153,67 @@ function buildRecent() {
     .slice(0, 8);
   if (!list.length) return null;
 
+  const cards = list.map(({ r, b }) => {
+    const card = bookCard(b, { showStage: true });
+    card.href = build('read', r.page > 1 ? { p: r.page } : {}, b.id);
+    const foot = card.querySelector('.bc-foot');
+    if (foot) {
+      foot.prepend(
+        h(
+          'span',
+          { style: { color: 'var(--accent-700)', display: 'inline-flex', alignItems: 'center', gap: '3px' } },
+          icon(IC_CLOCK, '', 10),
+          r.pages > 1 ? `第 ${r.page}/${r.pages} 页` : `第 ${r.page} 页`
+        ),
+        h('span.dot-sep', { style: { color: 'var(--ink-300)' } }, fmtTimeAgo(r.at))
+      );
+      const sizeEl = foot.querySelector('.bc-size');
+      sizeEl?.remove();
+    }
+    return card;
+  });
+
+  const track = h('div.rc-track', ...cards);
+  const viewport = h('div.rc-viewport', track);
+  const prevBtn = h('button.rc-arrow.rc-prev', { type: 'button', 'aria-label': '上一组', title: '上一组' }, icon(IC_LARR, '', 18));
+  const nextBtn = h('button.rc-arrow.rc-next', { type: 'button', 'aria-label': '下一组', title: '下一组' }, icon(IC_ARROW, '', 18));
+  const wrap = h('div.rc-wrap', prevBtn, viewport, nextBtn);
+
+  // 左右翻页（无横向滚动条）：按单卡步长平移，到两端自动隐藏箭头
+  let page = 0;
+  const stepPx = () => {
+    const first = track.children[0];
+    if (!first) return 0;
+    const cs = getComputedStyle(track);
+    const gap = parseFloat(cs.columnGap || cs.gap || '0') || 0;
+    return first.getBoundingClientRect().width + gap;
+  };
+  const apply = () => {
+    const step = stepPx();
+    const maxTx = Math.max(0, track.scrollWidth - viewport.clientWidth);
+    const maxByStep = step ? Math.ceil(maxTx / step) : 0;
+    if (page > maxByStep) page = maxByStep;
+    if (page < 0) page = 0;
+    const tx = Math.min(page * step, maxTx);
+    track.style.transform = `translateX(${-tx}px)`;
+    prevBtn.disabled = tx <= 0.5;
+    nextBtn.disabled = tx >= maxTx - 0.5;
+    const hide = maxTx <= 0.5;
+    prevBtn.style.visibility = hide ? 'hidden' : '';
+    nextBtn.style.visibility = hide ? 'hidden' : '';
+  };
+  prevBtn.addEventListener('click', () => {
+    page--;
+    apply();
+  });
+  nextBtn.addEventListener('click', () => {
+    page++;
+    apply();
+  });
+  // ResizeObserver 只引用内部节点，随 section 卸载被回收，不泄漏 window 全局监听
+  if (typeof ResizeObserver !== 'undefined') new ResizeObserver(apply).observe(viewport);
+  requestAnimationFrame(apply);
+
   return h(
     'section.section',
     h(
@@ -170,28 +232,7 @@ function buildRecent() {
         '清空记录'
       )
     ),
-    h(
-      'div.hscroll',
-      list.map(({ r, b }) => {
-        const card = bookCard(b, { showStage: true });
-        card.href = build('read', r.page > 1 ? { p: r.page } : {}, b.id);
-        const foot = card.querySelector('.bc-foot');
-        if (foot) {
-          foot.prepend(
-            h(
-              'span',
-              { style: { color: 'var(--accent-700)', display: 'inline-flex', alignItems: 'center', gap: '3px' } },
-              icon(IC_CLOCK, '', 10),
-              r.pages > 1 ? `第 ${r.page}/${r.pages} 页` : `第 ${r.page} 页`
-            ),
-            h('span.dot-sep', { style: { color: 'var(--ink-300)' } }, fmtTimeAgo(r.at))
-          );
-          const sizeEl = foot.querySelector('.bc-size');
-          sizeEl?.remove();
-        }
-        return card;
-      })
-    )
+    wrap
   );
 }
 

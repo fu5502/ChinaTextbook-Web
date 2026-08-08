@@ -7,6 +7,7 @@ import { books, stageSummary, getBook, meta } from '../catalog.js';
 import { recent, favorites } from '../storage.js';
 import { build, go } from '../router.js';
 import { bookCard } from './bookcard.js';
+import { buildSlideshow } from './slideshow.js';
 
 const IC_ARROW = '<path d="M5 12h14M13 6l6 6-6 6"/>';
 const IC_BOOK = '<path d="M4 4.5A2.5 2.5 0 0 1 6.5 2H20v18H6.5A2.5 2.5 0 0 0 4 22.5v-18z"/><path d="M4 17.5A2.5 2.5 0 0 1 6.5 15H20"/>';
@@ -60,6 +61,10 @@ export function renderHome(app) {
   );
 
   const page = h('div.page');
+
+  // ---- 精选教材轮播 ----
+  const slideshow = buildSlideshow(all);
+  if (slideshow) page.append(slideshow);
 
   // ---- 学段入口 ----
   page.append(

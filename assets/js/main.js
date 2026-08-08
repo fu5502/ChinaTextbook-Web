@@ -13,6 +13,7 @@ import { renderBrowse, renderSearch, renderFavorites, emptyState } from './ui/br
 import { renderDetail } from './ui/detail.js';
 import { skeletonGrid } from './ui/bookcard.js';
 import { coverReset } from './cover.js';
+import { destroySlideshow } from './ui/slideshow.js';
 import { toast } from './ui/toast.js';
 import { prefs, isPersistent } from './storage.js';
 import {
@@ -119,6 +120,7 @@ function setupRoutes() {
     }
 
     // 切换页面时清空主容器；阅读器内部会自行接管并先渲染 loading
+    destroySlideshow();
     coverReset();
     clear(app);
 

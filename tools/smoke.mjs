@@ -325,6 +325,23 @@ async function main() {
     check('页脚统计', /\d/.test((await evalJs(`document.getElementById('footer-stat')?.textContent||''`)) || ''),
       await evalJs(`document.getElementById('footer-stat')?.textContent`));
     check('标题正确', (await evalJs(`document.title`)).includes('教材'));
+    /* ---------- 1b. 轮播幻灯片 ---------- */
+    const ss = await evalJs(`(()=>{
+      const root=document.querySelector('.slideshow');
+      if(!root) return {ok:false};
+      const activeBtn=root.querySelector('.ss-int.on');
+      return {ok:true, slides:root.querySelectorAll('.slide').length, active:activeBtn?activeBtn.textContent:null, dots:root.querySelectorAll('.ss-dot').length, hasPause:!!root.querySelector('.ss-pause')};
+    })()`);
+    check('轮播渲染', ss.ok && ss.slides >= 1, `slides=${ss.slides}`);
+    check('轮播默认 5s', ss.active === '5s', `active=${ss.active}`);
+    check('轮播控件齐全', ss.hasPause && ss.dots >= 1, `dots=${ss.dots}`);
+    await evalJs(`document.querySelector('.slideshow .ss-int[data-s="10"]').click()`);
+    const ss10 = await evalJs(`({active:document.querySelector('.slideshow .ss-int.on')?.textContent, stored:localStorage.getItem('tb:slideInterval')})`);
+    check('轮播可切到 10s', ss10.active === '10s' && ss10.stored === '10', JSON.stringify(ss10));
+    await evalJs(`document.querySelector('.slideshow .ss-pause').click()`);
+    const pz = await evalJs(`({p:document.querySelector('.slideshow').classList.contains('paused'), btn:document.querySelector('.slideshow .ss-pause').classList.contains('on')})`);
+    check('轮播可暂停', pz.p && pz.btn, JSON.stringify(pz));
+    await evalJs(`document.querySelector('.slideshow .ss-pause').click(); document.querySelector('.slideshow .ss-int[data-s="5"]').click();`);
     noErrors('首页');
     await shot('01-home');
 

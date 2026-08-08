@@ -401,6 +401,36 @@ async function main() {
     console.log('\n[7] 阅读器 · 普通教材 (24MB)');
     await readerTest('0n2jrah', '07-reader-normal', 60000);
 
+    /* ---------- 7b. 阅读页「全屏幻灯片」弹层 ---------- */
+    console.log('\n[7b] 阅读页全屏幻灯片（多页轮播 + 设为封面）');
+    await evalJs(`document.querySelector('.rd-preview')?.click()`);
+    await waitFor(() => evalJs(`!!document.querySelector('.pv-fs .pv-slide')`), 12000);
+    const rpv = await evalJs(`(()=>{
+      const m=document.querySelector('.pv-fs');
+      const tr=m?.querySelector('.pv-track');
+      return {
+        open: !!m,
+        slides: tr? tr.children.length : 0,
+        dots: m? (m.querySelector('.pv-dots')?.children.length||0) : 0,
+        hasSetCover: !!m?.querySelector('.pv-setcover'),
+        hasPause: !!m?.querySelector('.pv-pause'),
+      };
+    })()`);
+    check('阅读页全屏幻灯片打开', rpv.open === true, JSON.stringify(rpv));
+    check('阅读页全屏幻灯片多页渲染', rpv.slides >= 1 && rpv.dots >= 1 && rpv.hasSetCover && rpv.hasPause, `slides=${rpv.slides} dots=${rpv.dots}`);
+    if (rpv.open && rpv.slides > 1) {
+      const t1 = await evalJs(`document.querySelector('.pv-fs .pv-track').style.transform`);
+      await evalJs(`document.querySelector('.pv-fs .pv-next').click()`);
+      await sleep(640);
+      const t2 = await evalJs(`document.querySelector('.pv-fs .pv-track').style.transform`);
+      check('阅读页全屏幻灯片可手动翻页', t1 !== t2, `t1=${t1} t2=${t2}`);
+    }
+    noErrors('阅读页全屏幻灯片');
+    await shot('07b-reader-preview');
+    await evalJs(`document.querySelector('.pv-fs-x')?.click()`);
+    const closed = await evalJs(`!document.querySelector('.pv-fs')`);
+    check('阅读页全屏幻灯片可关闭', closed === true);
+
     /* ---------- 8. 阅读器：分卷合并 ---------- */
     console.log('\n[8] 阅读器 · 分卷虚拟合并 (45.8MB / 2 卷)');
     await readerTest('092j1gl', '08-reader-volume', 75000);
@@ -560,6 +590,10 @@ async function main() {
     })()`);
     check('详情预览渲染', pv.ok && pv.slides >= 1, `slides=${pv.slides}`);
     check('预览控件齐全（圆点/设为封面/暂停）', pv.hasSetCover && pv.hasPause && pv.dots >= 1, `dots=${pv.dots}`);
+    // 详情页预览应为紧凑 50% 且带「全屏」按钮
+    const compact = await evalJs(`!!document.querySelector('.preview.preview--compact')`);
+    const hasFs = await evalJs(`!!document.querySelector('.preview .pv-fs-btn')`);
+    check('详情预览为紧凑 50% 且带全屏按钮', compact === true && hasFs === true, `compact=${compact} hasFs=${hasFs}`);
     const t1 = await evalJs(`document.querySelector('.preview .pv-track').style.transform`);
     await sleep(4500);
     const t2 = await evalJs(`document.querySelector('.preview .pv-track').style.transform`);

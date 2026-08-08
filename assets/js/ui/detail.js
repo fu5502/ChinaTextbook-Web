@@ -146,9 +146,10 @@ export function renderDetail(app, route) {
     );
   }
 
-  // ---- 教材预览幻灯片（多页缩图轮播 + 可设为封面） ----
+  // ---- 教材预览（紧凑 50% 内联 + 可点「全屏」展开整屏幻灯片 + 可设为封面） ----
   page.append(
     buildPreview(b, {
+      compact: true,
       onSetCover: () => {
         // 设为封面后，刷新详情页左侧大封面
         coverEl.classList.remove('loaded');

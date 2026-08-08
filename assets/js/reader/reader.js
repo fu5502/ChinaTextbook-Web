@@ -9,6 +9,7 @@ import { favorites, progress, recent, prefs } from '../storage.js';
 import { build, go } from '../router.js';
 import { downloadBook } from '../download.js';
 import { toast, toastError } from '../ui/toast.js';
+import { openPreviewFullscreen, destroyPreview } from '../ui/preview.js';
 import { loadPdfjs, docParams } from './loader.js';
 import { createTransport } from './transport.js';
 import { createThumbs } from './thumbs.js';
@@ -30,7 +31,7 @@ const IC_DL = '<path d="M12 3v13"/><path d="M7 11.5l5 5 5-5"/><path d="M4 21h16"
 const IC_HEART = '<path d="M12 21s-7.5-4.7-9.3-9A5.3 5.3 0 0 1 12 6.6 5.3 5.3 0 0 1 21.3 12c-1.8 4.3-9.3 9-9.3 9z"/>';
 const IC_THUMB = '<rect x="3.5" y="3.5" width="7" height="7" rx="1"/><rect x="13.5" y="3.5" width="7" height="7" rx="1"/><rect x="3.5" y="13.5" width="7" height="7" rx="1"/><rect x="13.5" y="13.5" width="7" height="7" rx="1"/>';
 const IC_LIST = '<path d="M4 6h16M4 12h16M4 18h10"/>';
-const IC_X = '<path d="M6 6l12 12M18 6L6 18"/>';
+const IC_PREVIEW = '<rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.8"/><path d="M21 15l-5-5L5 21"/>';
 
 const ZOOMS = [0.5, 0.67, 0.8, 0.9, 1, 1.25, 1.5, 1.75, 2, 2.5, 3, 4];
 
@@ -72,7 +73,9 @@ export async function renderReader(app, route) {
     pages: 0,
     page: 1,
     disposed: false,
+    previewOpen: false,
   };
+  let previewFs = null;
   applyNight(ui, state.night);
   applySidebar(ui, state.sidebar);
 
@@ -110,6 +113,17 @@ export async function renderReader(app, route) {
     }
     pdf = null;
     pdfViewer = null;
+    try {
+      previewFs?.close();
+    } catch (e) {
+      console.warn(e);
+    }
+    previewFs = null;
+    try {
+      destroyPreview();
+    } catch (e) {
+      console.warn(e);
+    }
     document.removeEventListener('keydown', onKey);
   };
 
@@ -327,6 +341,27 @@ export async function renderReader(app, route) {
   };
   setFav(ui, favorites.has(book.id));
 
+  /* ---- 教材预览：打开「全屏幻灯片」（多页轮播 + 可设为封面） ---- */
+  ui.btnPreview.onclick = () => {
+    if (previewFs) {
+      previewFs.close();
+      return;
+    }
+    const fs = openPreviewFullscreen(book, {
+      onSetCover: () => {},
+      onClose: () => {
+        previewFs = null;
+        state.previewOpen = false;
+        ui.btnPreview.setAttribute('aria-pressed', 'false');
+      },
+    });
+    if (fs) {
+      previewFs = fs;
+      state.previewOpen = true;
+      ui.btnPreview.setAttribute('aria-pressed', 'true');
+    }
+  };
+
   /* ---- 侧栏标签页 ---- */
 
   ui.tabThumbs.onclick = () => switchTab('thumbs');
@@ -348,6 +383,7 @@ export async function renderReader(app, route) {
 
   function onKey(e) {
     if (state.disposed) return;
+    if (state.previewOpen) return;
     const t = e.target;
     const typing = t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable);
     if (typing) return;
@@ -443,6 +479,7 @@ function buildShell(book) {
   const btnFull = btn(IC_FULL, '全屏', '.opt');
   const btnDownload = btn(IC_DL, '下载');
   const btnFav = btn(IC_HEART, '收藏');
+  const btnPreview = btn(IC_PREVIEW, '教材预览', '.rd-preview');
 
   const tabThumbs = h(
     'button.rd-tab',
@@ -504,7 +541,7 @@ function buildShell(book) {
         zoomLabel,
         btnZoomIn
       ),
-      h('div.rd-bar-r', btnRotate, btnScroll, btnSpread, btnNight, btnFull, h('span.rd-div'), btnDownload, btnFav)
+      h('div.rd-bar-r', btnRotate, btnScroll, btnSpread, btnNight, btnFull, h('span.rd-div'), btnDownload, btnFav, btnPreview)
     ),
     h('div.rd-body', side, backdrop, container, overlay)
   );
@@ -533,6 +570,7 @@ function buildShell(book) {
     btnFull,
     btnDownload,
     btnFav,
+    btnPreview,
     tabThumbs,
     tabOutline,
     thumbHost,

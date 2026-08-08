@@ -1,10 +1,12 @@
 /* ============================================================
-   preview.js — 教材详情页「多页预览」幻灯片
+   preview.js — 教材「多页预览」与「全屏幻灯片」
    ------------------------------------------------------------
-   · 展示该教材前若干页（最多 PREVIEW_MAX）缩图，A4 原比例完整显示
-   · 自动播放（默认 4s）+ 手动切换：左右箭头 / 圆点 / 悬停暂停 / 键盘 / 切后台暂停
-   · 「设为封面」：把当前显示的页设为该教材封面（持久化，列表/详情封面同步生效）
-   · 复用 cover.js 的 renderPageDataUrl / getPageCount / setCoverPage
+   · 两种形态，概念区分清楚：
+     - 预览（compact）：详情页内联的教材预览，默认按 50% 比例缩放，
+       仍是可自动/手动切换的轮播 + 可设为封面。
+     - 全屏幻灯片（openPreviewFullscreen）：点击「全屏」弹出整屏大图轮播，
+       详情页与阅读页共用，大图、自动/手动切换、可设为封面。
+   · 复用 cover.js 的 renderPageDataUrl / getPageCount / coverPageOf / setCoverPage
    ============================================================ */
 
 import { h, icon } from '../util.js';
@@ -16,27 +18,40 @@ const IC_NEXT = '<path d="M9 6l6 6-6 6"/>';
 const IC_PAUSE = '<path d="M7 5h3.5v14H7zM13.5 5H17v14h-3.5z"/>';
 const IC_PLAY = '<path d="M8 5v14l11-7z"/>';
 const IC_COVER = '<path d="M4 4.5A2.5 2.5 0 0 1 6.5 2H20v18H6.5A2.5 2.5 0 0 0 4 22.5v-18z"/><path d="M4 17.5A2.5 2.5 0 0 1 6.5 15H20"/>';
+const IC_FS = '<path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/>';
+const IC_X = '<path d="M6 6l12 12M18 6L6 18"/>';
 
 const PREVIEW_MAX = 8; // 最多预览页数
 const AUTOPLAY_MS = 4000; // 自动切换间隔
 
-let active = null;
+/** 所有存活的预览实例（含内联预览与全屏弹层），便于路由切换统一清理 */
+const instances = new Set();
 
-/** 路由切换时清理计时器与监听（防止离开详情页后仍在跑 setInterval） */
+/** 路由切换时清理所有预览（计时器 / 监听 / 全屏弹层 DOM） */
 export function destroyPreview() {
-  if (active) {
-    active.destroy();
-    active = null;
+  for (const inst of [...instances]) {
+    try {
+      inst.destroy();
+    } catch (e) {
+      console.warn(e);
+    }
   }
+  instances.clear();
+  // 兜底：清掉可能残留的全屏弹层 DOM
+  document.querySelectorAll('.pv-fs').forEach((el) => el.remove());
+  document.body.style.overflow = '';
 }
 
 /**
  * 构建教材预览幻灯片。
  * @param {object} book 书目对象
- * @param {object} [opts] { onSetCover(page) } 设为封面后的回调（如刷新详情大封面）
+ * @param {object} [opts]
+ *   - onSetCover(page)  设为封面后的回调（如刷新详情大封面）
+ *   - compact(boolean)  内联紧凑模式，按 50% 比例缩放
+ *   - inFullscreen(boolean) 已在全屏弹层内，不再渲染「全屏」按钮
  */
 export function buildPreview(book, opts = {}) {
-  const section = h('section.section.preview');
+  const section = h('section.section.preview' + (opts.compact ? '.preview--compact' : ''));
   section.append(
     h('div.section-head', h('h2', '教材预览'), h('span.hint', '自动浏览 · 可手动切换 · 可设为封面'))
   );
@@ -57,21 +72,89 @@ export function buildPreview(book, opts = {}) {
     icon(IC_COVER, '', 13),
     h('span.lbl', '设为封面')
   );
+  const fsBtn = h(
+    'button.btn.btn-sm.pv-fs-btn',
+    { type: 'button', title: '全屏幻灯片' },
+    icon(IC_FS, '', 13),
+    h('span.lbl', '全屏')
+  );
   const pauseBtn = h('button.pv-pause', { type: 'button', 'aria-label': '暂停自动播放', title: '暂停' }, icon(IC_PAUSE, '', 16));
   const bar = h('div.pv-bar', h('i'));
-  section.append(h('div.pv-controls', dotsWrap, setCoverBtn, pauseBtn), bar);
+  section.append(h('div.pv-controls', dotsWrap, setCoverBtn, opts.inFullscreen ? null : fsBtn, pauseBtn), bar);
 
   const placeholder = h('div.pv-loading', '正在读取教材页数…');
   section.append(placeholder);
 
-  const ctrl = createController(section, book, opts, { track, dotsWrap, setCoverBtn, pauseBtn, bar, placeholder });
-  active = ctrl;
+  const ctrl = createController(section, book, opts, { track, dotsWrap, setCoverBtn, fsBtn, pauseBtn, bar, placeholder });
+  instances.add(ctrl);
+  section._previewDestroy = () => {
+    instances.delete(ctrl);
+    ctrl.destroy();
+  };
   ctrl.init();
   return section;
 }
 
+/**
+ * 打开「全屏幻灯片」弹层（详情页 / 阅读页共用）。
+ * 返回 { close, root }；若已存在则不再重复打开。
+ * @param {object} book
+ * @param {object} [opts] { onSetCover, onClose, night }
+ */
+export function openPreviewFullscreen(book, opts = {}) {
+  const existing = document.querySelector('.pv-fs');
+  if (existing) return null;
+
+  const inner = buildPreview(book, { ...opts, compact: false, inFullscreen: true });
+
+  const backdrop = h('div.pv-fs-backdrop', { onclick: () => close() });
+  const x = h(
+    'button.pv-fs-x',
+    { type: 'button', 'aria-label': '关闭全屏幻灯片', title: '关闭 (Esc)' },
+    icon(IC_X, 'ico', 22)
+  );
+  const card = h('div.pv-fs-card', backdrop, x, inner);
+  const rootEl = h('div.pv-fs' + (opts.night || document.querySelector('.reader.night') ? '.night' : ''), card);
+  document.body.append(rootEl);
+  document.body.style.overflow = 'hidden';
+  x.focus();
+
+  let closed = false;
+  function close() {
+    if (closed) return;
+    closed = true;
+    fsInstance.destroy();
+    if (typeof opts.onClose === 'function') opts.onClose();
+  }
+
+  function onKey(e) {
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      close();
+    } else if (e.key === 'ArrowLeft') {
+      inner.querySelector('.pv-prev')?.click();
+    } else if (e.key === 'ArrowRight') {
+      inner.querySelector('.pv-next')?.click();
+    }
+  }
+
+  const fsInstance = {
+    destroy() {
+      document.removeEventListener('keydown', onKey);
+      document.body.style.overflow = '';
+      inner._previewDestroy?.();
+      rootEl.remove();
+    },
+  };
+  document.addEventListener('keydown', onKey);
+  instances.add(fsInstance);
+
+  x.addEventListener('click', close);
+  return { close, root: rootEl };
+}
+
 function createController(section, book, opts, refs) {
-  const { track, dotsWrap, setCoverBtn, pauseBtn, bar, placeholder } = refs;
+  const { track, dotsWrap, setCoverBtn, fsBtn, pauseBtn, bar, placeholder } = refs;
   const barFill = bar.querySelector('i');
 
   let pages = []; // 预览页号数组 [1,2,...]
@@ -201,6 +284,11 @@ function createController(section, book, opts, refs) {
       if (opts.onSetCover) opts.onSetCover(pg);
       toast(`已将第 ${pg} 页设为封面`, 'ok', 1800);
     });
+    if (!opts.inFullscreen && fsBtn) {
+      fsBtn.addEventListener('click', () => {
+        openPreviewFullscreen(book, { onSetCover: opts.onSetCover, night: section.closest('.reader')?.classList.contains('night') });
+      });
+    }
 
     const onEnter = () => {
       hovering = true;

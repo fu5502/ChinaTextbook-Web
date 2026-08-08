@@ -228,3 +228,145 @@
     transition: none;
   }
 }
+
+/* ============================================================
+   紧凑预览（50% 比例）：详情页内联「教材预览」
+   ============================================================ */
+.preview--compact {
+  padding: var(--sp-4);
+}
+.preview--compact .section-head {
+  margin-bottom: var(--sp-3);
+}
+/* 单张预览缩到 50% 宽，整体读起来是“小预览” */
+.preview--compact .pv-slide {
+  flex: 0 0 50%;
+}
+.preview--compact .pv-img {
+  box-shadow: var(--sh-1);
+}
+
+/* 全屏按钮 */
+.pv-fs-btn {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.pv-fs-btn svg {
+  width: 14px;
+  height: 14px;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* ============================================================
+   全屏幻灯片弹层（openPreviewFullscreen）
+   ============================================================ */
+.pv-fs {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: clamp(12px, 4vh, 48px);
+}
+.pv-fs-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(12, 18, 28, 0.72);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+.pv-fs-card {
+  position: relative;
+  z-index: 1;
+  width: min(820px, 100%);
+  max-height: 94vh;
+  display: flex;
+  flex-direction: column;
+  overflow: auto;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  box-shadow: var(--sh-3);
+  -webkit-overflow-scrolling: touch;
+}
+.pv-fs-x {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 3;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  flex: none;
+  border: none;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.85);
+  color: var(--ink-600);
+  cursor: pointer;
+  box-shadow: var(--sh-2);
+  transition: background var(--dur) var(--ease), color var(--dur) var(--ease);
+}
+.pv-fs-x .ico {
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.pv-fs-x:hover {
+  background: #fff;
+  color: var(--brand-700);
+}
+/* 弹层内嵌的预览组件：去掉外层卡片描边/底色，直接贴弹层 */
+.pv-fs-card .preview {
+  margin: 0;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+  background: var(--surface);
+  padding: var(--sp-5);
+}
+.pv-fs-card .preview .section-head {
+  padding-left: 4px;
+  padding-right: 52px;
+}
+
+/* 窄屏：弹层占满 */
+@media (max-width: 720px) {
+  .pv-fs {
+    padding: 0;
+  }
+  .pv-fs-card {
+    width: 100%;
+    max-height: 100%;
+    border-radius: 0;
+  }
+}
+
+/* 夜间模式适配 */
+.pv-fs.night .pv-fs-card {
+  background: #171b22;
+  border-color: #2c323d;
+}
+.pv-fs.night .pv-fs-card .preview {
+  background: #171b22;
+}
+.pv-fs.night .pv-fs-x {
+  background: rgba(40, 47, 58, 0.85);
+  color: #c3cbd9;
+}
+.pv-fs.night .pv-fs-x:hover {
+  background: #262c37;
+  color: #e3e8f0;
+}

@@ -498,6 +498,40 @@ async function main() {
     check('封面引擎渲染出真实缩图', coverLoaded === true, `loaded=${coverStat.loaded} failed=${coverStat.failed} 共 ${coverStat.total} 张`);
     noErrors('封面');
     await shot('14-covers');
+
+    /* ---------- 15. 详情页预览幻灯片 ---------- */
+    console.log('\n[15] 详情页预览幻灯片');
+    await evalJs('window.__NO_COVER__ = false');
+    await gotoHash('#/book/0n2jrah', {
+      waitMs: 600,
+      ready: () => evalJs(`document.querySelector('.preview') != null && document.querySelector('.pv-slide') != null`),
+      readyTimeout: 15000,
+    });
+    const pv = await evalJs(`(()=>{
+      const root=document.querySelector('.preview');
+      if(!root) return {ok:false};
+      return {
+        ok:true,
+        slides: root.querySelectorAll('.pv-slide').length,
+        dots: root.querySelectorAll('.pv-dot').length,
+        hasSetCover: !!root.querySelector('.pv-setcover'),
+        hasPause: !!root.querySelector('.pv-pause')
+      };
+    })()`);
+    check('详情预览渲染', pv.ok && pv.slides >= 1, `slides=${pv.slides}`);
+    check('预览控件齐全（圆点/设为封面/暂停）', pv.hasSetCover && pv.hasPause && pv.dots >= 1, `dots=${pv.dots}`);
+    const t1 = await evalJs(`document.querySelector('.preview .pv-track').style.transform`);
+    await sleep(4500);
+    const t2 = await evalJs(`document.querySelector('.preview .pv-track').style.transform`);
+    check('预览自动切换', t1 !== t2, `t1=${t1} t2=${t2}`);
+    await evalJs(`document.querySelector('.preview .pv-next').click()`);
+    const moved = await evalJs(`(()=>{const tr=document.querySelector('.preview .pv-track').style.transform; const m=/translateX\\((-?[\\d.]+)px\\)/.exec(tr||''); return m?Math.round(Number(m[1])):null;})()`);
+    check('预览可手动下一页', moved !== null, `translateX=${moved}`);
+    await evalJs(`document.querySelector('.preview .pv-setcover').click()`);
+    const cov = await evalJs(`localStorage.getItem('tb:coverPage:0n2jrah')`);
+    check('可设为封面（写入 localStorage）', cov && Number(cov) >= 1, `coverPage=${cov}`);
+    noErrors('详情预览');
+    await shot('15-detail-preview');
   } finally {
     /* ---------- 汇总 ---------- */
     console.log('\n' + '─'.repeat(56));

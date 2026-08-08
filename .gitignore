@@ -16,3 +16,6 @@ Thumbs.db
 # 上游仓库目录树缓存（catalog 构建产物，非源码）
 .cache-tree.json
 .cache/
+
+# 部署临时目录（wrangler 部署用，含完整静态文件副本）
+_deploy_tmp/

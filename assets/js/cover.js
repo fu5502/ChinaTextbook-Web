@@ -82,12 +82,12 @@ const mem = new Map(); // id -> dataURL（会话内，避免重复渲染）
 function etagOf(book) {
   return `${book.path}@${book.size}`;
 }
-function cacheKeyOf(book) {
-  return book.id;
+function cacheKeyOf(book, page = 1) {
+  return `${book.id}@p${page}`;
 }
 
 /* ---------------- 渲染单本首页 ---------------- */
-async function renderCover(book) {
+async function renderCover(book, page = 1) {
   const { lib } = await loadPdfjs();
   let transport = null;
   let pdf = null;
@@ -95,11 +95,11 @@ async function renderCover(book) {
     transport = await createTransport(book, {});
     const loadingTask = lib.getDocument(docParams({ range: transport }));
     pdf = await loadingTask.promise;
-    const page = await pdf.getPage(1);
-    const base = page.getViewport({ scale: 1 });
+    const pg = await pdf.getPage(page);
+    const base = pg.getViewport({ scale: 1 });
     const dpr = Math.min(window.devicePixelRatio || 1, MAX_DPR);
     const scale = Math.max(0.2, (COVER_W * dpr) / base.width);
-    const vp = page.getViewport({ scale });
+    const vp = pg.getViewport({ scale });
 
     const canvas = document.createElement('canvas');
     canvas.width = Math.max(1, Math.round(vp.width));
@@ -107,7 +107,7 @@ async function renderCover(book) {
     const ctx = canvas.getContext('2d');
     ctx.fillStyle = '#ffffff';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
-    await page.render({ canvasContext: ctx, viewport: vp, intent: 'default' }).promise;
+    await pg.render({ canvasContext: ctx, viewport: vp, intent: 'default' }).promise;
 
     const dataUrl = canvas.toDataURL('image/jpeg', 0.82);
     try {
@@ -139,11 +139,12 @@ const elEntry = new Map(); // element -> entry
 let active = 0;
 const queue = [];
 
-function entryFor(book) {
-  let e = byId.get(book.id);
+function entryFor(book, page = 1) {
+  const key = book.id + '#p' + page;
+  let e = byId.get(key);
   if (!e) {
-    e = { book, els: new Set(), status: 'idle', url: null };
-    byId.set(book.id, e);
+    e = { book, page, els: new Set(), status: 'idle', url: null };
+    byId.set(key, e);
   }
   return e;
 }
@@ -188,8 +189,9 @@ async function runOne(e) {
     failAll(e);
     return;
   }
+  const key = cacheKeyOf(e.book, e.page);
   // 会话内存命中
-  const cached = mem.get(e.book.id);
+  const cached = mem.get(key);
   if (cached) {
     e.url = cached;
     e.status = 'done';
@@ -197,24 +199,24 @@ async function runOne(e) {
     return;
   }
   // IDB 命中（校验失效标记）
-  const rec = await idbGet(cacheKeyOf(e.book));
+  const rec = await idbGet(key);
   if (rec && rec.etag === etagOf(e.book) && Date.now() - (rec.at || 0) < TTL && rec.dataUrl) {
-    mem.set(e.book.id, rec.dataUrl);
+    mem.set(key, rec.dataUrl);
     e.url = rec.dataUrl;
     e.status = 'done';
     paintAll(e, rec.dataUrl);
     return;
   }
-  const res = await renderCover(e.book);
+  const res = await renderCover(e.book, e.page);
   if (!coverEnabled()) {
     failAll(e);
     return;
   }
   if (res) {
-    mem.set(e.book.id, res.dataUrl);
+    mem.set(key, res.dataUrl);
     e.url = res.dataUrl;
     e.status = 'done';
-    idbPut(cacheKeyOf(e.book), { etag: etagOf(e.book), at: Date.now(), w: res.w, h: res.h, dataUrl: res.dataUrl });
+    idbPut(key, { etag: etagOf(e.book), at: Date.now(), w: res.w, h: res.h, dataUrl: res.dataUrl });
     paintAll(e, res.dataUrl);
   } else {
     e.status = 'fail';
@@ -255,11 +257,12 @@ function markFailed(el) {
  */
 export function registerCover(el, book) {
   if (!el) return;
+  const page = coverPageOf(book);
   if (!coverEnabled()) {
     markFailed(el);
     return;
   }
-  const e = entryFor(book);
+  const e = entryFor(book, page);
   e.els.add(el);
   elEntry.set(el, e);
 
@@ -287,4 +290,78 @@ export function coverReset() {
   }
   queue.length = 0;
   active = 0;
+}
+
+/* ---------------- 封面页覆盖（指定某页当封面） ---------------- */
+const coverPageKey = (id) => `tb:coverPage:${id}`;
+
+/** 该教材当前用作封面的页码（默认第 1 页） */
+export function coverPageOf(book) {
+  try {
+    const v = Number(localStorage.getItem(coverPageKey(book.id)));
+    return v >= 1 ? v : 1;
+  } catch {
+    return 1;
+  }
+}
+
+/** 把某页设为该教材封面（持久化到 localStorage） */
+export function setCoverPage(book, page) {
+  try {
+    localStorage.setItem(coverPageKey(book.id), String(page));
+  } catch {
+    /* 隐私模式忽略 */
+  }
+}
+
+/**
+ * 渲染任意页为 JPEG dataURL（带会话内存 + IndexedDB 缓存，key 含页码）。
+ * 供详情页「教材预览」幻灯片复用，避免重复下载渲染。
+ */
+export async function renderPageDataUrl(book, page = 1) {
+  if (!coverEnabled()) return null;
+  const key = cacheKeyOf(book, page);
+  if (mem.has(key)) return mem.get(key);
+  const rec = await idbGet(key);
+  if (rec && rec.etag === etagOf(book) && Date.now() - (rec.at || 0) < TTL && rec.dataUrl) {
+    mem.set(key, rec.dataUrl);
+    return rec.dataUrl;
+  }
+  const res = await renderCover(book, page);
+  if (res) {
+    mem.set(key, res.dataUrl);
+    idbPut(key, { etag: etagOf(book), at: Date.now(), w: res.w, h: res.h, dataUrl: res.dataUrl });
+    return res.dataUrl;
+  }
+  return null;
+}
+
+/** 取 PDF 总页数（供预览决定幻灯片张数） */
+export async function getPageCount(book) {
+  const { lib } = await loadPdfjs();
+  let transport = null;
+  let pdf = null;
+  try {
+    transport = await createTransport(book, {});
+    pdf = await lib.getDocument(docParams({ range: transport })).promise;
+    return pdf.numPages || 0;
+  } catch (e) {
+    console.warn('[cover] getPageCount 失败', book.id, e?.message || e);
+    return 0;
+  } finally {
+    try {
+      pdf?.destroy();
+    } catch {}
+    try {
+      transport?.abort();
+    } catch {}
+  }
+}
+
+/** 用当前封面页刷新某个封面元素（「设为封面」后调用） */
+export async function refreshCover(el, book) {
+  if (!el) return;
+  const url = await renderPageDataUrl(book, coverPageOf(book));
+  if (url) paint(el, url);
+  else markFailed(el);
 }

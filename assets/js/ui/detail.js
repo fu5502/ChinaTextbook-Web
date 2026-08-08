@@ -11,7 +11,8 @@ import { downloadBook } from '../download.js';
 import { bookCard } from './bookcard.js';
 import { emptyState } from './browse.js';
 import { toast } from './toast.js';
-import { registerCover } from '../cover.js';
+import { registerCover, refreshCover } from '../cover.js';
+import { buildPreview } from './preview.js';
 
 const IC_READ = '<path d="M4 4.5A2.5 2.5 0 0 1 6.5 2H20v18H6.5A2.5 2.5 0 0 0 4 22.5v-18z"/><path d="M4 17.5A2.5 2.5 0 0 1 6.5 15H20"/>';
 const IC_DOWN = '<path d="M12 3v13"/><path d="M7 11.5l5 5 5-5"/><path d="M4 21h16"/>';
@@ -144,6 +145,17 @@ export function renderDetail(app, route) {
       )
     );
   }
+
+  // ---- 教材预览幻灯片（多页缩图轮播 + 可设为封面） ----
+  page.append(
+    buildPreview(b, {
+      onSetCover: () => {
+        // 设为封面后，刷新详情页左侧大封面
+        coverEl.classList.remove('loaded');
+        refreshCover(coverEl, b);
+      },
+    })
+  );
 
   // ---- 相关教材 ----
   const related = findRelated(b);
